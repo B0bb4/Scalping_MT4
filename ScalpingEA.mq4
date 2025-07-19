@@ -45,8 +45,8 @@ extern bool SundayTradingOnly = true;           // Wochenende Info
 
 // === NEWS-FILTER ===
 extern bool NewsFilter = false;                 // News-Filter (Kunde kann ein/ausschalten)
-extern double MinSpread = 0.1;                  // Min. Spread für Trading (Pips)
-extern double MaxSpread = 5.0;                  // Max. Spread für Trading (Pips) - realistisch für Live
+extern double MinSpread = 0.0;                  // Min. Spread für Trading (Pips) - Entspannt
+extern double MaxSpread = 10.0;                 // Max. Spread für Trading (Pips) - Erweitert für mehr Trades
 
 // === TECHNISCHE PARAMETER ===
 extern int SwingPeriod = 15;                    // Swing-Erkennung Periode
@@ -92,7 +92,7 @@ extern int MACD_Signal = 9;                     // MACD Signal SMA
 
 // === FOREX-SPEZIFISCHE PARAMETER ===
 extern bool ForexMode = true;                   // Forex-Optimierungen aktivieren
-extern double VolatilityFilter = 0.002;         // Volatilitäts-Filter (0.2% - professionell)
+extern double VolatilityFilter = 0.0005;        // Volatilitäts-Filter (0.05% - entspannt für mehr Trades)
 
 // === DASHBOARD-EINSTELLUNGEN ===
 extern int DashboardX = 20;                     // Dashboard X-Position
@@ -237,9 +237,7 @@ void OnTick()
    if(!AnalyzeForexMarketConditions())
       return;
    
-   // 5. NY Open Boost (Vorteil nutzen, aber nicht beschränken)
-   bool isNYOpen = IsNYOpenTime();
-   // Keine Beschränkungen mehr - nur Informationen für Dashboard
+   // 5. Trading ohne Zeit-Beschränkungen für mehr Gelegenheiten
    
    // Marktanalyse durchführen
    AnalyzeForexMarket();
@@ -248,7 +246,7 @@ void OnTick()
    if(OrdersTotal() > 0)
       MonitorForexPositions();
    
-   // Trading-Logik (nur wenn alle Checks bestanden)
+   // Trading-Logik - IMMER aktiv für mehr Trades
    CheckForexTradingSignals();
 }
 
@@ -266,16 +264,12 @@ bool AnalyzeForexMarketConditions()
       return false;
    }
    
-   // Forex-spezifische Volatilitätsprüfung
+   // Forex-spezifische Volatilitätsprüfung - Entspannt für mehr Trades
    double currentATR = iATR(NULL, 0, ATR_Period, 1);
    LastATR = currentATR;
    
-   if(currentATR < VolatilityFilter * Close[1])
-   {
-      if(EnableAlerts && GetTickCount() % 30000 == 0)
-         Print("Niedrige Volatilitaet - ATR: ", DoubleToStr(currentATR, 5));
-      return false;
-   }
+   // Volatilitäts-Filter entfernt - mehr Trading-Möglichkeiten
+   HighVolatilityPeriod = (currentATR > VolatilityFilter * Close[1] * 0.5); // Halbierte Schwelle
    
    // News-Filter
    if(NewsFilter && IsNewsTime())
@@ -646,9 +640,8 @@ void CheckForexTradingSignals()
    double emaFast = iMA(NULL, 0, EMA_Fast, 0, MODE_EMA, PRICE_CLOSE, 1);
    double emaSlow = iMA(NULL, 0, EMA_Slow, 0, MODE_EMA, PRICE_CLOSE, 1);
    
-   // Forex BUY Signal
-   if(TrendBullish && Close[1] > emaFast && emaFast > emaSlow &&
-      rsi > 50 && rsi < RSI_Overbought && HighVolatilityPeriod)
+   // Forex BUY Signal - Vereinfacht für mehr Trades
+   if(Close[1] > emaFast && emaFast > emaSlow && rsi > 40 && rsi < 80)
    {
       if(OpenForexTrade(OP_BUY))
       {
@@ -658,9 +651,8 @@ void CheckForexTradingSignals()
       }
    }
    
-   // Forex SELL Signal
-   if(!TrendBullish && Close[1] < emaFast && emaFast < emaSlow &&
-      rsi < 50 && rsi > RSI_Oversold && HighVolatilityPeriod)
+   // Forex SELL Signal - Vereinfacht für mehr Trades
+   if(Close[1] < emaFast && emaFast < emaSlow && rsi < 60 && rsi > 20)
    {
       if(OpenForexTrade(OP_SELL))
       {

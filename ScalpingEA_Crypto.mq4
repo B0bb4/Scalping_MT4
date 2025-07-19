@@ -42,8 +42,8 @@ extern bool RestrictedTradingHours = true;     // Trading-Zeit Info anzeigen
 extern bool NYOpenFocus = true;                 // NY Open Focus (15:30 deutsche Zeit)
 extern bool SundayTradingOnly = true;           // Wochenende Info
 extern bool NewsFilter = false;                 // News-Filter (Kunde kann ein/ausschalten)
-extern double MinSpread = 0.0001;               // Min. Spread für Trading
-extern double MaxSpread = 0.005;                // Max. Spread für Trading
+extern double MinSpread = 0.0;                  // Min. Spread für Trading - Entspannt
+extern double MaxSpread = 0.01;                 // Max. Spread für Trading - Erweitert für mehr Trades
 
 // === UNIVERSELLE SYMBOL-UNTERSTÜTZUNG ===
 // Alle Symbole sind standardmäßig erlaubt - keine Beschränkungen
@@ -864,8 +864,12 @@ void CheckCryptoTradingSignals()
       return;
    }
    
-   // Krypto-Bullish Entry
-   if(BullishSetup && TrendDirection != "BEARISH")
+   // Vereinfachte Krypto BUY Signal - Mehr Trading-Gelegenheiten
+   double ema_fast = iMA(NULL, 0, EMA_Fast, 0, MODE_EMA, PRICE_CLOSE, 1);
+   double ema_slow = iMA(NULL, 0, EMA_Slow, 0, MODE_EMA, PRICE_CLOSE, 1);
+   double rsi = iRSI(NULL, 0, RSI_Period, PRICE_CLOSE, 1);
+   
+   if(Close[1] > ema_fast && ema_fast > ema_slow && rsi > 30 && rsi < 80)
    {
       double sl = CalculateCryptoStopLoss(OP_BUY);
       double tp = CalculateCryptoTakeProfit(OP_BUY, sl);
@@ -886,8 +890,8 @@ void CheckCryptoTradingSignals()
       }
    }
    
-   // Krypto-Bearish Entry
-   if(BearishSetup && TrendDirection != "BULLISH")
+   // Vereinfachte Krypto SELL Signal - Mehr Trading-Gelegenheiten
+   if(Close[1] < ema_fast && ema_fast < ema_slow && rsi < 70 && rsi > 20)
    {
       double sl = CalculateCryptoStopLoss(OP_SELL);
       double tp = CalculateCryptoTakeProfit(OP_SELL, sl);
