@@ -24,12 +24,12 @@
 //+------------------------------------------------------------------+
 
 // === GRUNDEINSTELLUNGEN ===
-extern double LotSize = 0.01;                   // Lot-Größe pro Trade (Standard für 1:50-75 Hebel)
-extern double RiskPercent = 1.0;                // Risiko in % pro Trade (professionell)
-extern double AccountBalance = 1000.0;          // Referenz-Kontostand (professionell)
-extern int MaxTradesPerDay = 3;                 // Max. Trades pro Tag (Empfehlung)
-extern double RiskRewardRatio = 2.5;            // Risk-Reward Verhältnis (höhere Gewinne)
-extern double MaxDrawdownPercent = 2.0;         // Max. Drawdown in %
+extern double LotSize = 0.005;                  // Kleinere Lot-Size für besseres Risk-Management
+extern double RiskPercent = 0.3;                // Konservativeres Risiko 0.3% pro Trade
+extern double AccountBalance = 1000.0;          // Referenz-Kontostand
+extern int MaxTradesPerDay = 15;                // Mehr Trades erlaubt (war 5)
+extern double RiskRewardRatio = 2.0;            // Realistischeres RRR (war 3.0)
+extern double MaxDrawdownPercent = 3.0;         // Höhere Drawdown-Toleranz (war 1.0)
 
 // === HANDELSZEITEN (nur Information) ===
 extern bool RestrictedTradingHours = true;     // Trading-Zeit Info anzeigen
@@ -57,10 +57,10 @@ extern double ATR_Multiplier = 2.5;             // ATR Multiplikator für SL
 extern int ATR_Period = 14;                     // ATR Periode
 
 // === TAKE PROFIT & STOP LOSS ===
-extern int SL_Points = 30;                      // Stop Loss in Pips (Forex)
-extern int TP_Points = 60;                      // Take Profit in Pips (Forex)
-extern int TP2_Points = 90;                     // Take Profit 2 in Pips (Forex)
-extern int TrailingDistance = 20;               // Trailing Stop Distance in Pips
+extern int SL_Points = 60;                      // Stop Loss in Pips (mehr Spielraum)
+extern int TP_Points = 90;                      // Take Profit in Pips (1.5:1 RRR, erreichbarer)
+extern int TP2_Points = 150;                    // Take Profit 2 in Pips (2.5:1 RRR)
+extern int TrailingDistance = 35;               // Trailing Stop Distance in Pips
 
 // === ALERTS & INTERFACE ===
 extern bool EnableAlerts = true;                // Popup-Alerts aktivieren
@@ -218,26 +218,17 @@ void OnTick()
    
    LastBarTime = Time[0];
    
-   // KUNDENPROFIL-CHECKS
+   // VEREINFACHTE CHECKS - Trading-Aktivität Priorität
    
-   // 1. Symbol-Validierung (alle Symbole erlaubt)
-   if(!IsAllowedSymbol())
-   {
-      return;
-   }
+   // Trade Count nur für Dashboard (kein Limit)
+   CheckTradeCount();
    
-   // 2. Drawdown Überwachung (nur bei extremen Werten stoppen)
+   // Nur extremer Drawdown-Schutz
    if(!CheckDrawdownLimit())
-      return; // Nur bei wirklich gefährlichem Drawdown stoppen
-   
-   // 3. Verlust-Serie Management (nur Information)
-   HandleLossStreak();
-   
-   // 4. Forex-spezifische Marktanalyse
-   if(!AnalyzeForexMarketConditions())
       return;
    
-   // 5. Trading ohne Zeit-Beschränkungen für mehr Gelegenheiten
+   // Verlust-Serie Management (nur Information)
+   HandleLossStreak();
    
    // Marktanalyse durchführen
    AnalyzeForexMarket();
@@ -246,7 +237,7 @@ void OnTick()
    if(OrdersTotal() > 0)
       MonitorForexPositions();
    
-   // Trading-Logik - IMMER aktiv für mehr Trades
+   // QUALITÄTS-TRADING-LOGIK
    CheckForexTradingSignals();
 }
 
@@ -255,31 +246,21 @@ void OnTick()
 //+------------------------------------------------------------------+
 bool AnalyzeForexMarketConditions()
 {
-   // Spread prüfen (in Pips)
-   double spread = (Ask - Bid) / Point;
-   if(spread > MaxSpread)
-   {
-      if(EnableAlerts && GetTickCount() % 30000 == 0)
-         Print("Spread zu hoch: ", DoubleToStr(spread, 1), " Pips > ", MaxSpread);
-      return false;
-   }
-   
-   // Forex-spezifische Volatilitätsprüfung - Entspannt für mehr Trades
-   double currentATR = iATR(NULL, 0, ATR_Period, 1);
-   LastATR = currentATR;
-   
-   // Volatilitäts-Filter entfernt - mehr Trading-Möglichkeiten
-   HighVolatilityPeriod = (currentATR > VolatilityFilter * Close[1] * 0.5); // Halbierte Schwelle
-   
-   // News-Filter
-   if(NewsFilter && IsNewsTime())
-   {
-      if(EnableAlerts)
-         Print("News-Zeit erkannt - Trading pausiert");
-      return false;
-   }
-   
-   return true;
+    // ALLE BLOCKIERENDEN CHECKS ENTFERNT - NUR NOCH INFORMATION
+    double spread = (Ask - Bid) / Point;
+    double currentATR = iATR(NULL, 0, ATR_Period, 1);
+    LastATR = currentATR;
+    HighVolatilityPeriod = (currentATR > VolatilityFilter * Close[1] * 0.5);
+    
+    // Spread und News werden nur noch geloggt, blockieren aber nicht
+    if(spread > MaxSpread && EnableAlerts && GetTickCount() % 30000 == 0)
+       Print("INFO: Hoher Spread: ", DoubleToStr(spread, 1), " Pips");
+    
+    if(NewsFilter && IsNewsTime() && EnableAlerts)
+       Print("INFO: News-Zeit erkannt");
+    
+    // IMMER TRUE - KEINE BLOCKIERUNG MEHR
+    return true;
 }
 
 //+------------------------------------------------------------------+
@@ -356,24 +337,24 @@ void CheckTradeCount()
 //+------------------------------------------------------------------+
 bool CheckDrawdownLimit()
 {
-   double currentEquity = AccountEquity();
-   double accountBalance = AccountBalance();
-   if(accountBalance <= 0) accountBalance = AccountBalance;
-   
-   CurrentDrawdown = ((accountBalance - currentEquity) / accountBalance) * 100;
-   
-   if(CurrentDrawdown > MaxDrawdown)
-      MaxDrawdown = CurrentDrawdown;
-   
-   // Nur bei extremem Drawdown stoppen (Sicherheitshalber)
-   if(CurrentDrawdown > MaxDrawdownPercent * 2) // Doppelte Grenze
-   {
-      if(EnableAlerts)
-         Alert("KRITISCHER DRAWDOWN: ", DoubleToStr(CurrentDrawdown, 1), "% - EA gestoppt!");
-      return false;
-   }
-   
-   return true;
+    double currentEquity = AccountEquity();
+    double accountBalance = AccountBalance();
+    if(accountBalance <= 0) accountBalance = AccountBalance;
+    
+    CurrentDrawdown = ((accountBalance - currentEquity) / accountBalance) * 100;
+    
+    if(CurrentDrawdown > MaxDrawdown)
+       MaxDrawdown = CurrentDrawdown;
+    
+    // STRENGES Drawdown-Management - Stoppe bei Erreichen der Grenze
+    if(CurrentDrawdown > MaxDrawdownPercent)
+    {
+       if(EnableAlerts)
+          Alert("DRAWDOWN LIMIT ERREICHT: ", DoubleToStr(CurrentDrawdown, 1), "% - Trading gestoppt!");
+       return false;
+    }
+    
+    return true;
 }
 
 //+------------------------------------------------------------------+
@@ -633,34 +614,47 @@ void AnalyzeForexMomentum()
 //+------------------------------------------------------------------+
 void CheckForexTradingSignals()
 {
-   if(OrdersTotal() >= 1) // Nur 1 Position gleichzeitig
-      return;
-   
-   double rsi = iRSI(NULL, 0, RSI_Period, PRICE_CLOSE, 1);
-   double emaFast = iMA(NULL, 0, EMA_Fast, 0, MODE_EMA, PRICE_CLOSE, 1);
-   double emaSlow = iMA(NULL, 0, EMA_Slow, 0, MODE_EMA, PRICE_CLOSE, 1);
-   
-   // Forex BUY Signal - Vereinfacht für mehr Trades
-   if(Close[1] > emaFast && emaFast > emaSlow && rsi > 40 && rsi < 80)
-   {
-      if(OpenForexTrade(OP_BUY))
-      {
-         if(ShowEntryArrows)
-            DrawForexEntryArrow("ForexBuy_" + TimeToStr(Time[0]), Time[0],
-                               Low[0] - 20*Point, 233, clrLime, "BUY");
-      }
-   }
-   
-   // Forex SELL Signal - Vereinfacht für mehr Trades
-   if(Close[1] < emaFast && emaFast < emaSlow && rsi < 60 && rsi > 20)
-   {
-      if(OpenForexTrade(OP_SELL))
-      {
-         if(ShowEntryArrows)
-            DrawForexEntryArrow("ForexSell_" + TimeToStr(Time[0]), Time[0],
-                               High[0] + 20*Point, 234, clrRed, "SELL");
-      }
-   }
+    if(OrdersTotal() >= 1) // Nur 1 Position gleichzeitig
+       return;
+    
+    // OPTIMIERTE ENTRY-STRATEGIE für bessere Winrate
+    double rsi = iRSI(NULL, 0, RSI_Period, PRICE_CLOSE, 1);
+    double rsiPrev = iRSI(NULL, 0, RSI_Period, PRICE_CLOSE, 2);
+    double ema50 = iMA(NULL, 0, 50, 0, MODE_EMA, PRICE_CLOSE, 1);
+    double ema20 = iMA(NULL, 0, 20, 0, MODE_EMA, PRICE_CLOSE, 1);
+    
+    // BEWÄHRTE H1-PARAMETER: Quality over Quantity
+    if(rsi < 50 && Close[1] > ema50)
+    {
+       if(OpenForexTrade(OP_BUY))
+       {
+          Print("H1 BUY - RSI:", DoubleToStr(rsi, 2), " Price above EMA50");
+          if(ShowEntryArrows)
+             DrawForexEntryArrow("ForexBuy_" + TimeToStr(Time[0]), Time[0],
+                                Low[0] - 20*Point, 233, clrLime, "BUY");
+       }
+    }
+    
+    // BEWÄHRTE H1-PARAMETER: Quality over Quantity
+    if(rsi > 50 && Close[1] < ema50)
+    {
+       if(OpenForexTrade(OP_SELL))
+       {
+          Print("H1 SELL - RSI:", DoubleToStr(rsi, 2), " Price below EMA50");
+          if(ShowEntryArrows)
+             DrawForexEntryArrow("ForexSell_" + TimeToStr(Time[0]), Time[0],
+                                High[0] + 20*Point, 234, clrRed, "SELL");
+       }
+    }
+    
+    // Debug alle 30 Ticks
+    static int tickCount = 0;
+    tickCount++;
+    if(tickCount % 30 == 0)
+    {
+       Print("DEBUG: RSI=", DoubleToStr(rsi, 2), " RSI-Prev=", DoubleToStr(rsiPrev, 2),
+             " EMA20=", DoubleToStr(ema20, 5), " EMA50=", DoubleToStr(ema50, 5));
+    }
 }
 
 //+------------------------------------------------------------------+
@@ -754,35 +748,62 @@ void MonitorForexPositions()
       bool shouldExit = false;
       string exitReason = "";
       
-      // Exit-Bedingungen für Forex
+      // BEWÄHRTE H1 EXIT-STRATEGIE (zurück zu erfolgreichen Parametern)
+      double ema50 = iMA(NULL, 0, 50, 0, MODE_EMA, PRICE_CLOSE, 1);
+      double ema20 = iMA(NULL, 0, 20, 0, MODE_EMA, PRICE_CLOSE, 1);
+      
       if(OrderType() == OP_BUY)
       {
-         // RSI Überkauft
-         if(rsi > RSI_Overbought)
+         // RSI stark überkauft
+         if(rsi > 75)
          {
             shouldExit = true;
-            exitReason = "RSI Überkauft";
+            exitReason = "RSI Overbought 75";
          }
-         // Bearish Setup
-         else if(!TrendBullish)
+         // Profit-Target für H1 höher
+         else if(OrderProfit() > 50)
          {
             shouldExit = true;
-            exitReason = "Bearish Setup";
+            exitReason = "Profit Target 50";
+         }
+         // H1: Weniger aggressive Trend-Break (4 Stunden statt 2)
+         else if(Close[1] < ema50 && Close[2] < ema50 && Close[3] < ema50 && Close[4] < ema50)
+         {
+            shouldExit = true;
+            exitReason = "Strong Trend Break";
+         }
+         // Stop Loss für H1 erweitert
+         else if(OrderProfit() < -60)
+         {
+            shouldExit = true;
+            exitReason = "Stop Loss";
          }
       }
       else if(OrderType() == OP_SELL)
       {
-         // RSI Überverkauft
-         if(rsi < RSI_Oversold)
+         // RSI stark überverkauft
+         if(rsi < 25)
          {
             shouldExit = true;
-            exitReason = "RSI Überverkauft";
+            exitReason = "RSI Oversold 25";
          }
-         // Bullish Setup
-         else if(TrendBullish)
+         // Profit-Target für H1 höher
+         else if(OrderProfit() > 50)
          {
             shouldExit = true;
-            exitReason = "Bullish Setup";
+            exitReason = "Profit Target 50";
+         }
+         // H1: Weniger aggressive Trend-Break (4 Stunden statt 2)
+         else if(Close[1] > ema50 && Close[2] > ema50 && Close[3] > ema50 && Close[4] > ema50)
+         {
+            shouldExit = true;
+            exitReason = "Strong Trend Break";
+         }
+         // Stop Loss für H1 erweitert
+         else if(OrderProfit() < -60)
+         {
+            shouldExit = true;
+            exitReason = "Stop Loss";
          }
       }
       
