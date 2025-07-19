@@ -143,8 +143,8 @@ double CurrentResistance = 0;
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   Print("🚀 ScalpingEA FOREX EDITION initialisiert - by Alexander Boß");
-   Print("💱 Optimiert für Forex-Paare (Juli 2025)");
+   Print("ScalpingEA FOREX EDITION initialisiert - by Alexander Boss");
+   Print("Optimiert für Forex-Paare (Juli 2025)");
    
    // PROFESSIONELLES CHART-DESIGN FÜR FOREX-TRADING
    SetupProfessionalChartDesign();
@@ -154,25 +154,31 @@ int OnInit()
    
    if(ForexMode)
    {
-      Print("💱 Forex-Modus aktiviert - Marktzeiten-optimiert");
-      Print("📊 Volatilitäts-Filter: ", VolatilityFilter * 100, "%");
-      Print("🎯 Risk-Reward Ratio: ", RiskRewardRatio);
+      Print("Forex-Modus aktiviert - Marktzeiten-optimiert");
+      Print("Volatilitaets-Filter: ", VolatilityFilter * 100, "%");
+      Print("Risk-Reward Ratio: ", RiskRewardRatio);
    }
    
    // UNIVERSELLER EA - ALLE SYMBOLE UNTERSTÜTZT
-   Print("🌍 UNIVERSELLER EA - Alle Symbole unterstützt!");
-   Print("📊 Symbol: ", Symbol(), " | Max Trades/Tag: ", MaxTradesPerDay);
-   Print("⚙️ Kundenprofil aktiv: Handelszeiten 15:45-17:45, RRR ", RiskRewardRatio);
+   Print("UNIVERSELLER EA - Alle Symbole unterstuetzt!");
+   Print("Symbol: ", Symbol(), " | Max Trades/Tag: ", MaxTradesPerDay);
+   Print("Kundenprofil aktiv: Handelszeiten 15:45-17:45, RRR ", RiskRewardRatio);
    
    // NEWS-FILTER STATUS
    if(NewsFilter)
-      Print("📰 News-Filter: AKTIVIERT - Trading pausiert bei wichtigen News");
+      Print("News-Filter: AKTIVIERT - Trading pausiert bei wichtigen News");
    else
-      Print("📰 News-Filter: DEAKTIVIERT - Trading läuft auch bei News");
+      Print("News-Filter: DEAKTIVIERT - Trading laeuft auch bei News");
    
-   // Dashboard erstellen
+   // Dashboard erstellen UND sofort aktualisieren
    if(EnableDashboard)
-      CreateForexDashboard();
+   {
+       CreateForexDashboard();
+       UpdateForexDashboard(); // Sofortige Aktualisierung hinzufügen
+   }
+   
+   // Timer für Dashboard-Updates bei geschlossenem Markt
+   EventSetTimer(10); // Alle 10 Sekunden aktualisieren
    
    return(INIT_SUCCEEDED);
 }
@@ -182,12 +188,15 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
-   // Dashboard-Objekte entfernen
-   ObjectsDeleteAll(0, "Forex_");
-   ObjectDelete("ForexDashboard");
-   
-   Print("🔴 ScalpingEA Forex Edition beendet");
-   PrintTradingStats();
+    // Timer stoppen
+    EventKillTimer();
+    
+    // Dashboard-Objekte entfernen
+    ObjectsDeleteAll(0, "Forex_");
+    ObjectDelete("ForexDashboard");
+    
+    Print("ScalpingEA Forex Edition beendet");
+    PrintTradingStats();
 }
 
 //+------------------------------------------------------------------+
@@ -253,7 +262,7 @@ bool AnalyzeForexMarketConditions()
    if(spread > MaxSpread)
    {
       if(EnableAlerts && GetTickCount() % 30000 == 0)
-         Print("📊 Spread zu hoch: ", DoubleToStr(spread, 1), " Pips > ", MaxSpread);
+         Print("Spread zu hoch: ", DoubleToStr(spread, 1), " Pips > ", MaxSpread);
       return false;
    }
    
@@ -264,7 +273,7 @@ bool AnalyzeForexMarketConditions()
    if(currentATR < VolatilityFilter * Close[1])
    {
       if(EnableAlerts && GetTickCount() % 30000 == 0)
-         Print("📊 Niedrige Volatilität - ATR: ", DoubleToStr(currentATR, 5));
+         Print("Niedrige Volatilitaet - ATR: ", DoubleToStr(currentATR, 5));
       return false;
    }
    
@@ -272,7 +281,7 @@ bool AnalyzeForexMarketConditions()
    if(NewsFilter && IsNewsTime())
    {
       if(EnableAlerts)
-         Print("📰 News-Zeit erkannt - Trading pausiert");
+         Print("News-Zeit erkannt - Trading pausiert");
       return false;
    }
    
@@ -344,7 +353,7 @@ void CheckTradeCount()
    if(TradesToday > MaxTradesPerDay)
    {
       if(EnableAlerts && TradesToday == MaxTradesPerDay + 1)
-         Alert("⚠️ INFO: Mehr als ", MaxTradesPerDay, " Trades heute - Trader entscheidet selbst!");
+         Alert("INFO: Mehr als ", MaxTradesPerDay, " Trades heute - Trader entscheidet selbst!");
    }
 }
 
@@ -366,7 +375,7 @@ bool CheckDrawdownLimit()
    if(CurrentDrawdown > MaxDrawdownPercent * 2) // Doppelte Grenze
    {
       if(EnableAlerts)
-         Alert("🚨 KRITISCHER DRAWDOWN: ", DoubleToStr(CurrentDrawdown, 1), "% - EA gestoppt!");
+         Alert("KRITISCHER DRAWDOWN: ", DoubleToStr(CurrentDrawdown, 1), "% - EA gestoppt!");
       return false;
    }
    
@@ -382,13 +391,13 @@ void HandleLossStreak()
    {
       CurrentRiskPercent = RiskPercent * 0.8; // Risiko reduzieren
       if(EnableAlerts && LosingTrades == 3)
-         Print("⚠️ Verlust-Serie: Risiko reduziert auf ", DoubleToStr(CurrentRiskPercent, 1), "%");
+         Print("Verlust-Serie: Risiko reduziert auf ", DoubleToStr(CurrentRiskPercent, 1), "%");
    }
    else if(LosingTrades >= 5)
    {
       CurrentRiskPercent = RiskPercent * 0.6; // Stärker reduzieren
       if(EnableAlerts && LosingTrades == 5)
-         Print("🚨 Starke Verlust-Serie: Risiko stark reduziert auf ", DoubleToStr(CurrentRiskPercent, 1), "%");
+         Print("Starke Verlust-Serie: Risiko stark reduziert auf ", DoubleToStr(CurrentRiskPercent, 1), "%");
    }
    else
    {
@@ -570,14 +579,14 @@ void CheckForexDivergence()
    if(Low[1] < Low[5] && rsi1 > rsi2 && rsi1 < RSI_Oversold + 10)
    {
       if(EnableAlerts && GetTickCount() % 10000 == 0)
-         Alert("💱 Starke Bullish Divergenz erkannt!");
+         Alert("Starke Bullish Divergenz erkannt!");
    }
    
    // Bearish Divergenz für Forex
    if(High[1] > High[5] && rsi1 < rsi2 && rsi1 > RSI_Overbought - 10)
    {
       if(EnableAlerts && GetTickCount() % 10000 == 0)
-         Alert("💱 Starke Bearish Divergenz erkannt!");
+         Alert("Starke Bearish Divergenz erkannt!");
    }
 }
 
@@ -621,7 +630,7 @@ void AnalyzeForexMomentum()
    
    if(strongMomentum && EnableAlerts && GetTickCount() % 20000 == 0)
    {
-      Print("💱 Starkes Forex-Momentum erkannt - ATR: ", DoubleToStr(atr, 5));
+      Print("Starkes Forex-Momentum erkannt - ATR: ", DoubleToStr(atr, 5));
    }
 }
 
@@ -638,26 +647,26 @@ void CheckForexTradingSignals()
    double emaSlow = iMA(NULL, 0, EMA_Slow, 0, MODE_EMA, PRICE_CLOSE, 1);
    
    // Forex BUY Signal
-   if(TrendBullish && Close[1] > emaFast && emaFast > emaSlow && 
+   if(TrendBullish && Close[1] > emaFast && emaFast > emaSlow &&
       rsi > 50 && rsi < RSI_Overbought && HighVolatilityPeriod)
    {
       if(OpenForexTrade(OP_BUY))
       {
          if(ShowEntryArrows)
             DrawForexEntryArrow("ForexBuy_" + TimeToStr(Time[0]), Time[0],
-                               Low[0] - 20*Point, 233, clrLime, "🚀 BUY");
+                               Low[0] - 20*Point, 233, clrLime, "BUY");
       }
    }
    
    // Forex SELL Signal
-   if(!TrendBullish && Close[1] < emaFast && emaFast < emaSlow && 
+   if(!TrendBullish && Close[1] < emaFast && emaFast < emaSlow &&
       rsi < 50 && rsi > RSI_Oversold && HighVolatilityPeriod)
    {
       if(OpenForexTrade(OP_SELL))
       {
          if(ShowEntryArrows)
             DrawForexEntryArrow("ForexSell_" + TimeToStr(Time[0]), Time[0],
-                               High[0] + 20*Point, 234, clrRed, "⚠️ SELL");
+                               High[0] + 20*Point, 234, clrRed, "SELL");
       }
    }
 }
@@ -723,7 +732,7 @@ bool OpenForexTrade(int orderType)
          PlaySound(SoundFileEntry);
       
       if(EnableAlerts)
-         Alert("💱 Forex Trade geöffnet: ", (orderType == OP_BUY ? "BUY" : "SELL"), 
+         Alert("Forex Trade geoeffnet: ", (orderType == OP_BUY ? "BUY" : "SELL"),
                " | Lots: ", DoubleToStr(lotSize, 3), " | Symbol: ", Symbol());
       
       return true;
@@ -731,7 +740,7 @@ bool OpenForexTrade(int orderType)
    else
    {
       int error = GetLastError();
-      Print("🔴 Forex-Trade Fehler: ", error, " - ", ErrorDescription(error));
+      Print("Forex-Trade Fehler: ", error, " - ", ErrorDescription(error));
       return false;
    }
 }
@@ -805,7 +814,7 @@ void MonitorForexPositions()
                PlaySound(isWin ? SoundFileWin : SoundFileLoss);
             
             if(EnableAlerts)
-               Alert("💱 Forex Position geschlossen: ", exitReason, 
+               Alert("Forex Position geschlossen: ", exitReason,
                      " | Profit: ", DoubleToStr(profit, 2));
             
             if(ShowExitArrows)
@@ -864,7 +873,7 @@ void CreateForexDashboard()
    ObjectSet("ForexDashboard", OBJPROP_BORDER_TYPE, BORDER_FLAT);
    
    // Labels - Standard
-   CreateForexLabel("Forex_Title", "💱 SCALPING EA - FOREX", DashboardX + 10, DashboardY + 10, clrGold, 11);
+   CreateForexLabel("Forex_Title", "SCALPING EA - FOREX", DashboardX + 10, DashboardY + 10, clrGold, 11);
    CreateForexLabel("Forex_Symbol", "", DashboardX + 10, DashboardY + 30, clrWhite, 10);
    CreateForexLabel("Forex_Trend", "", DashboardX + 10, DashboardY + 50, clrWhite, 10);
    CreateForexLabel("Forex_Setup", "", DashboardX + 10, DashboardY + 70, clrWhite, 10);
@@ -907,66 +916,66 @@ void UpdateForexDashboard()
 {
    // Symbol Info
    double spread = (Ask - Bid) / Point;
-   ObjectSetText("Forex_Symbol", "📊 " + Symbol() + " | Spread: " + DoubleToStr(spread, 1) + " Pips", 10, "Arial", clrWhite);
+   ObjectSetText("Forex_Symbol", Symbol() + " | Spread: " + DoubleToStr(spread, 1) + " Pips", 10, "Arial", clrWhite);
    
    // Trend-Richtung
-   string trendText = TrendBullish ? "📈 BULLISH" : "📉 BEARISH";
+   string trendText = TrendBullish ? "BULLISH" : "BEARISH";
    color trendColor = TrendBullish ? clrLime : clrRed;
    ObjectSetText("Forex_Trend", "Trend: " + trendText, 10, "Arial", trendColor);
    
    // Setup-Status
-   string setupStatus = "⏳ WAITING FOR SIGNAL";
+   string setupStatus = "WAITING FOR SIGNAL";
    color setupColor = clrGray;
    
    if(TrendBullish && HighVolatilityPeriod)
    {
-      setupStatus = "🚀 BULLISH SETUP";
+      setupStatus = "BULLISH SETUP";
       setupColor = clrLime;
    }
    else if(!TrendBullish && HighVolatilityPeriod)
    {
-      setupStatus = "⚠️ BEARISH SETUP";
+      setupStatus = "BEARISH SETUP";
       setupColor = clrRed;
    }
    
    ObjectSetText("Forex_Setup", setupStatus, 10, "Arial", setupColor);
    
    // Volume-Status
-   string volumeStatus = HighVolatilityPeriod ? "🔥 HIGH VOLATILITY" : "😴 LOW VOLATILITY";
+   string volumeStatus = HighVolatilityPeriod ? "HIGH VOLATILITY" : "LOW VOLATILITY";
    color volumeColor = HighVolatilityPeriod ? clrOrange : clrGray;
    ObjectSetText("Forex_Volume", volumeStatus, 10, "Arial", volumeColor);
    
    // Position-Status
-   string positionText = "💼 Positionen: " + IntegerToString(OrdersTotal());
+   string positionText = "Positionen: " + IntegerToString(OrdersTotal());
    if(OrdersTotal() > 0)
    {
-      positionText += " | 🔄 MONITORING";
+      positionText += " | MONITORING";
    }
    ObjectSetText("Forex_Position", positionText, 10, "Arial", clrAqua);
    
    // Support/Resistance (vereinfacht)
-   ObjectSetText("Forex_Support", "🔵 Support: " + DoubleToStr(CurrentSupport, 5), 10, "Arial", clrAqua);
-   ObjectSetText("Forex_Resistance", "🔴 Resistance: " + DoubleToStr(CurrentResistance, 5), 10, "Arial", clrOrange);
+   ObjectSetText("Forex_Support", "Support: " + DoubleToStr(CurrentSupport, 5), 10, "Arial", clrAqua);
+   ObjectSetText("Forex_Resistance", "Resistance: " + DoubleToStr(CurrentResistance, 5), 10, "Arial", clrOrange);
    
    // Statistiken
-   string statsText = "📊 Trades: " + IntegerToString(TotalTrades) + " | 🏆 Wins: " + IntegerToString(WinningTrades) + " | 📉 Loss: " + IntegerToString(LosingTrades);
+   string statsText = "Trades: " + IntegerToString(TotalTrades) + " | Wins: " + IntegerToString(WinningTrades) + " | Loss: " + IntegerToString(LosingTrades);
    ObjectSetText("Forex_Stats", statsText, 10, "Arial", clrWhite);
    
-   string profitText = "💰 Profit: " + DoubleToStr(TotalProfit, 2) + " " + AccountCurrency();
+   string profitText = "Profit: " + DoubleToStr(TotalProfit, 2) + " " + AccountCurrency();
    color profitColor = (TotalProfit >= 0) ? clrLime : clrRed;
    ObjectSetText("Forex_Profit", profitText, 10, "Arial", profitColor);
    
    double winRate = 0;
    if(TotalTrades > 0)
       winRate = (WinningTrades * 100.0) / TotalTrades;
-   string winRateText = "🎯 Win-Rate: " + DoubleToStr(winRate, 1) + "%";
+   string winRateText = "Win-Rate: " + DoubleToStr(winRate, 1) + "%";
    color winRateColor = (winRate >= 70) ? clrLime : (winRate >= 50) ? clrYellow : clrRed;
    ObjectSetText("Forex_WinRate", winRateText, 10, "Arial", winRateColor);
    
    // KUNDENPROFIL-DASHBOARD ERWEITERUNGEN
    
    // Trades pro Tag (Info ohne Beschränkung)
-   string tradeCountText = "📅 Heute: " + IntegerToString(TradesToday) + " Trades (Empfehlung: " + IntegerToString(MaxTradesPerDay) + ")";
+   string tradeCountText = "Heute: " + IntegerToString(TradesToday) + " Trades (Empfehlung: " + IntegerToString(MaxTradesPerDay) + ")";
    color tradeCountColor;
    if(TradesToday > MaxTradesPerDay)
       tradeCountColor = clrOrange; // Warnung aber kein Stopp
@@ -977,12 +986,12 @@ void UpdateForexDashboard()
    ObjectSetText("Forex_DailyTrades", tradeCountText, 10, "Arial", tradeCountColor);
    
    // Aktuelles Risiko
-   string riskText = "⚖️ Risiko: " + DoubleToStr(CurrentRiskPercent, 1) + "% (" + DoubleToStr(CalculatedLotSize, 3) + " Lots)";
+   string riskText = "Risiko: " + DoubleToStr(CurrentRiskPercent, 1) + "% (" + DoubleToStr(CalculatedLotSize, 3) + " Lots)";
    color riskColor = (CurrentRiskPercent < RiskPercent) ? clrYellow : clrWhite;
    ObjectSetText("Forex_Risk", riskText, 10, "Arial", riskColor);
    
    // Drawdown Status
-   string ddText = "📉 Drawdown: " + DoubleToStr(CurrentDrawdown, 1) + "% (Max: " + DoubleToStr(MaxDrawdownPercent, 1) + "%)";
+   string ddText = "Drawdown: " + DoubleToStr(CurrentDrawdown, 1) + "% (Max: " + DoubleToStr(MaxDrawdownPercent, 1) + "%)";
    color ddColor = (CurrentDrawdown > MaxDrawdownPercent * 0.8) ? clrRed : (CurrentDrawdown > MaxDrawdownPercent * 0.6) ? clrYellow : clrLime;
    ObjectSetText("Forex_Drawdown", ddText, 10, "Arial", ddColor);
    
@@ -993,28 +1002,28 @@ void UpdateForexDashboard()
    {
       if(IsNYOpenTime())
       {
-         timeStatus = "🇺🇸 NY OPEN - OPTIMAL";
+         timeStatus = "NY OPEN - OPTIMAL";
          timeColor = clrAqua;
       }
       else
       {
-         timeStatus = "✅ EMPFOHLENE ZEIT";
+         timeStatus = "EMPFOHLENE ZEIT";
          timeColor = clrLime;
       }
    }
    else
    {
-      timeStatus = "ℹ️ AUSSERHALB EMPF. ZEIT";
+      timeStatus = "AUSSERHALB EMPF. ZEIT";
       timeColor = clrYellow; // Warnung statt Grau
    }
    ObjectSetText("Forex_TradingTime", timeStatus, 10, "Arial", timeColor);
    
    // Aktuelles Symbol anzeigen
-   string currentSymbolText = "💱 Symbol: " + Symbol();
+   string currentSymbolText = "Symbol: " + Symbol();
    ObjectSetText("Forex_CurrentSymbol", currentSymbolText, 10, "Arial", clrAqua);
    
    // News-Filter Status anzeigen
-   string newsFilterText = "📰 News-Filter: ";
+   string newsFilterText = "News-Filter: ";
    color newsFilterColor;
    if(NewsFilter)
    {
@@ -1040,19 +1049,19 @@ void UpdateForexDashboard()
 void PrintTradingStats()
 {
    Print("=== FOREX TRADING STATISTIKEN ===");
-   Print("📊 Gesamt Trades: ", TotalTrades);
-   Print("🏆 Gewinn-Trades: ", WinningTrades);
-   Print("📉 Verlust-Trades: ", LosingTrades);
-   Print("💰 Gesamt-Profit: ", DoubleToStr(TotalProfit, 2));
+   Print("Gesamt Trades: ", TotalTrades);
+   Print("Gewinn-Trades: ", WinningTrades);
+   Print("Verlust-Trades: ", LosingTrades);
+   Print("Gesamt-Profit: ", DoubleToStr(TotalProfit, 2));
    
    if(TotalTrades > 0)
    {
       double winRate = (WinningTrades * 100.0) / TotalTrades;
-      Print("🎯 Win-Rate: ", DoubleToStr(winRate, 1), "%");
+      Print("Win-Rate: ", DoubleToStr(winRate, 1), "%");
    }
    
-   Print("📉 Max. Drawdown: ", DoubleToStr(MaxDrawdown, 1), "%");
-   Print("📅 Trades heute: ", TradesToday);
+   Print("Max. Drawdown: ", DoubleToStr(MaxDrawdown, 1), "%");
+   Print("Trades heute: ", TradesToday);
    Print("============================");
 }
 
@@ -1061,7 +1070,7 @@ void PrintTradingStats()
 //+------------------------------------------------------------------+
 void SetupProfessionalChartDesign()
 {
-   Print("🎨 Lade professionelles Forex-Chart Design...");
+   Print("Lade professionelles Forex-Chart Design...");
    
    // === HINTERGRUND & GRID ===
    ChartSetInteger(0, CHART_COLOR_BACKGROUND, clrBlack);              // Schwarzer Hintergrund
@@ -1094,9 +1103,9 @@ void SetupProfessionalChartDesign()
    ChartSetInteger(0, CHART_SHOW_TRADE_LEVELS, true);                  // Trade-Level anzeigen
    ChartSetInteger(0, CHART_COLOR_STOP_LEVEL, clrOrangeRed);           // Orange-Red für SL
    
-   Print("✅ Professionelles Forex-Design geladen!");
-   Print("💱 Bullish Kerzen: Neon-Grün | Bearish Kerzen: Pink");
-   Print("🎯 Ask: Hot Pink | Bid: Deep Sky Blue");
+   Print("Professionelles Forex-Design geladen!");
+   Print("Bullish Kerzen: Neon-Gruen | Bearish Kerzen: Pink");
+   Print("Ask: Hot Pink | Bid: Deep Sky Blue");
 }
 
 //+------------------------------------------------------------------+
@@ -1154,4 +1163,17 @@ void DrawForexSuccessSymbol(string name, datetime time, double price, bool isWin
    string profitText = DoubleToStr(profit, 2);
    ObjectCreate(name + "_profit", OBJ_TEXT, 0, time, price);
    ObjectSetText(name + "_profit", profitText, 8, "Arial", symbolColor);
+}
+
+//+------------------------------------------------------------------+
+//| Timer function - Dashboard Updates bei geschlossenem Markt      |
+//+------------------------------------------------------------------+
+void OnTimer()
+{
+   if(EnableDashboard)
+   {
+       CheckTradeCount(); // Trade-Counter aktualisieren
+       CalculatedLotSize = CalculateDynamicLotSize(); // Lot-Size berechnen
+       UpdateForexDashboard(); // Dashboard aktualisieren
+   }
 }

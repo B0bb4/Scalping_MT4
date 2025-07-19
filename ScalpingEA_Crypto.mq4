@@ -168,8 +168,8 @@ double CurrentRiskPercent = 1.0;
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   Print("🚀 ScalpingEA CRYPTO EDITION initialisiert - by Alexander Boß");
-   Print("💎 Optimiert für Krypto-Paare (Juli 2025)");
+   Print("ScalpingEA CRYPTO EDITION initialisiert - by Alexander Boss");
+   Print("Optimiert für Krypto-Paare (Juli 2025)");
    
    // PROFESSIONELLES CHART-DESIGN FÜR KRYPTO-TRADING
    SetupProfessionalChartDesign();
@@ -179,25 +179,31 @@ int OnInit()
    
    if(CryptoMode)
    {
-      Print("💎 Krypto-Modus aktiviert - 24/7 Trading bereit");
-      Print("📊 Volatilitäts-Filter: ", VolatilityFilter * 100, "%");
-      Print("🎯 Risk-Reward Ratio: ", RiskRewardRatio);
+      Print("Krypto-Modus aktiviert - 24/7 Trading bereit");
+      Print("Volatilitaets-Filter: ", VolatilityFilter * 100, "%");
+      Print("Risk-Reward Ratio: ", RiskRewardRatio);
    }
    
    // UNIVERSELLER EA - ALLE SYMBOLE UNTERSTÜTZT
-   Print("🌍 UNIVERSELLER EA - Alle Symbole unterstützt!");
-   Print("📊 Symbol: ", Symbol(), " | Max Trades/Tag: ", MaxTradesPerDay);
-   Print("⚙️ Kundenprofil aktiv: Handelszeiten 15:45-17:45, RRR ", RiskRewardRatio);
+   Print("UNIVERSELLER EA - Alle Symbole unterstuetzt!");
+   Print("Symbol: ", Symbol(), " | Max Trades/Tag: ", MaxTradesPerDay);
+   Print("Kundenprofil aktiv: Handelszeiten 15:45-17:45, RRR ", RiskRewardRatio);
    
    // NEWS-FILTER STATUS
    if(NewsFilter)
-      Print("📰 News-Filter: AKTIVIERT - Trading pausiert bei wichtigen News");
+      Print("News-Filter: AKTIVIERT - Trading pausiert bei wichtigen News");
    else
-      Print("📰 News-Filter: DEAKTIVIERT - Trading läuft auch bei News");
+      Print("News-Filter: DEAKTIVIERT - Trading laeuft auch bei News");
    
-   // Dashboard erstellen
+   // Dashboard erstellen UND sofort aktualisieren
    if(EnableDashboard)
-      CreateCryptoDashboard();
+   {
+       CreateCryptoDashboard();
+       UpdateCryptoDashboard(); // Sofortige Aktualisierung hinzufügen
+   }
+   
+   // Timer für Dashboard-Updates bei geschlossenem Markt
+   EventSetTimer(10); // Alle 10 Sekunden aktualisieren
    
    return(INIT_SUCCEEDED);
 }
@@ -207,14 +213,17 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
 {
-   // Alle Objekte löschen
-   ObjectsDeleteAll(0, OBJ_TREND);
-   ObjectsDeleteAll(0, OBJ_HLINE);
-   ObjectsDeleteAll(0, OBJ_ARROW);
-   ObjectsDeleteAll(0, OBJ_LABEL);
+    // Timer stoppen
+    EventKillTimer();
+    
+    // Alle Objekte löschen
+    ObjectsDeleteAll(0, OBJ_TREND);
+    ObjectsDeleteAll(0, OBJ_HLINE);
+    ObjectsDeleteAll(0, OBJ_ARROW);
+    ObjectsDeleteAll(0, OBJ_LABEL);
    ObjectsDeleteAll(0, OBJ_RECTANGLE);
    
-   Print("🔴 ScalpingEA Crypto Edition beendet");
+   Print("ScalpingEA Crypto Edition beendet");
    PrintTradingStats();
 }
 
@@ -243,7 +252,7 @@ void OnTick()
    if(!IsAllowedSymbol())
    {
       if(EnableAlerts && GetTickCount() % 60000 == 0) // Alle 60 Sekunden
-         Print("⚠️ Symbol ", Symbol(), " nicht in erlaubten Paaren");
+         Print("Symbol ", Symbol(), " nicht in erlaubten Paaren");
       return;
    }
    
@@ -283,7 +292,7 @@ bool AnalyzeCryptoMarketConditions()
    if(CurrentSpread < MinSpread || CurrentSpread > MaxSpread)
    {
       if(EnableAlerts && GetTickCount() % 30000 == 0) // Alle 30 Sekunden
-         Print("⚠️ Spread außerhalb der Grenzen: ", CurrentSpread * 100, "%");
+         Print("Spread ausserhalb der Grenzen: ", CurrentSpread * 100, "%");
       return false;
    }
    
@@ -297,7 +306,7 @@ bool AnalyzeCryptoMarketConditions()
    // News-Filter
    if(NewsFilter && IsNewsTime())
    {
-      Print("📰 News-Zeit erkannt - Trading pausiert");
+      Print("News-Zeit erkannt - Trading pausiert");
       return false;
    }
    
@@ -487,7 +496,7 @@ void AnalyzeCryptoVolume()
    if(CurrentVolume > AvgVolume * VolumeMultiplier * 2)
    {
       if(EnableAlerts)
-         Alert("🚀 EXTREME Volume-Spike erkannt! ", CurrentVolume);
+         Alert("EXTREME Volume-Spike erkannt! ", CurrentVolume);
       
       // Volatilitäts-Zone zeichnen
       if(ShowVolatilityZones)
@@ -583,7 +592,7 @@ void CheckTradeCount()
    if(TradesToday > MaxTradesPerDay)
    {
       if(EnableAlerts && TradesToday == MaxTradesPerDay + 1)
-         Alert("⚠️ INFO: Mehr als ", MaxTradesPerDay, " Trades heute - Trader entscheidet selbst!");
+         Alert("INFO: Mehr als ", MaxTradesPerDay, " Trades heute - Trader entscheidet selbst!");
    }
 }
 
@@ -606,7 +615,7 @@ bool CheckDrawdownLimit()
       if(CurrentDrawdown > MaxDrawdownPercent)
       {
          if(EnableAlerts)
-            Alert("🚨 DRAWDOWN LIMIT erreicht: ", CurrentDrawdown, "% - Trading gestoppt!");
+            Alert("DRAWDOWN LIMIT erreicht: ", CurrentDrawdown, "% - Trading gestoppt!");
          return false;
       }
    }
@@ -642,14 +651,14 @@ void HandleLossStreak()
       CurrentRiskPercent = RiskPercent * 0.5; // Halbiere Risiko
       
       if(EnableAlerts)
-         Print("⚠️ Verlust-Serie erkannt (", consecutiveLosses, ") - Risiko reduziert auf ", CurrentRiskPercent, "%");
+         Print("Verlust-Serie erkannt (", consecutiveLosses, ") - Risiko reduziert auf ", CurrentRiskPercent, "%");
    }
    else if(consecutiveLosses > 5)
    {
       CurrentRiskPercent = RiskPercent * 0.25; // Noch stärker reduzieren
       
       if(EnableAlerts)
-         Alert("🚨 Starke Verlust-Serie (", consecutiveLosses, ") - Warte auf klare Marktrichtung!");
+         Alert("Starke Verlust-Serie (", consecutiveLosses, ") - Warte auf klare Marktrichtung!");
    }
    else
    {
@@ -738,15 +747,15 @@ void CheckCryptoDivergence()
    if(priceChange < -0.02 && rsiChange > 0.1) // Min. 2% Preis-Drop, RSI steigt
    {
       if(EnableAlerts)
-         Alert("💎 Starke Bullish Divergenz erkannt!");
+         Alert("Starke Bullish Divergenz erkannt!");
       DrawCryptoArrow("BullishDiv", Time[1], Low[1] - 30*Point, 233, clrAqua);
    }
    
-   // Bearish Divergenz  
+   // Bearish Divergenz
    if(priceChange > 0.02 && rsiChange < -0.1) // Min. 2% Preis-Anstieg, RSI fällt
    {
       if(EnableAlerts)
-         Alert("⚠️ Starke Bearish Divergenz erkannt!");
+         Alert("Starke Bearish Divergenz erkannt!");
       DrawCryptoArrow("BearishDiv", Time[1], High[1] + 30*Point, 234, clrOrange);
    }
 }
@@ -774,7 +783,7 @@ void CheckCryptoConfirmationSignals()
    {
       BullishSetup = true;
       if(EnableAlerts)
-         Alert("🚀 Starkes Bullish Setup erkannt!");
+         Alert("Starkes Bullish Setup erkannt!");
    }
    
    // Krypto-Bearish Confirmation
@@ -788,7 +797,7 @@ void CheckCryptoConfirmationSignals()
    {
       BearishSetup = true;
       if(EnableAlerts)
-         Alert("⚠️ Starkes Bearish Setup erkannt!");
+         Alert("Starkes Bearish Setup erkannt!");
    }
 }
 
@@ -851,7 +860,7 @@ void CheckCryptoTradingSignals()
    // Korrelations-Filter
    if(CorrelationFilter && !BTCBullish && BullishSetup)
    {
-      Print("⚠️ BTC-Korrelation verhindert Bullish Trade");
+      Print("BTC-Korrelation verhindert Bullish Trade");
       return;
    }
    
@@ -864,13 +873,13 @@ void CheckCryptoTradingSignals()
       if(OpenCryptoTrade(OP_BUY, sl, tp))
       {
          if(ShowEntryArrows)
-            DrawCryptoEntryArrow("CryptoBuy_" + TimeToStr(Time[0]), Time[0], 
-                               Low[0] - 20*Point, 233, clrLime, "🚀 BUY");
+            DrawCryptoEntryArrow("CryptoBuy_" + TimeToStr(Time[0]), Time[0],
+                               Low[0] - 20*Point, 233, clrLime, "BUY");
          
          if(EnableSounds)
             PlaySound(SoundFileEntry);
          if(EnableAlerts)
-            Alert("💎 CRYPTO BUY SIGNAL! ", Symbol(), " @ ", DoubleToStr(Ask, Digits));
+            Alert("CRYPTO BUY SIGNAL! ", Symbol(), " @ ", DoubleToStr(Ask, Digits));
          
          WaitingForExit = true;
          LastTradeTime = Time[0];
@@ -886,13 +895,13 @@ void CheckCryptoTradingSignals()
       if(OpenCryptoTrade(OP_SELL, sl, tp))
       {
          if(ShowEntryArrows)
-            DrawCryptoEntryArrow("CryptoSell_" + TimeToStr(Time[0]), Time[0], 
-                               High[0] + 20*Point, 234, clrRed, "⚠️ SELL");
+            DrawCryptoEntryArrow("CryptoSell_" + TimeToStr(Time[0]), Time[0],
+                               High[0] + 20*Point, 234, clrRed, "SELL");
          
          if(EnableSounds)
             PlaySound(SoundFileEntry);
          if(EnableAlerts)
-            Alert("⚠️ CRYPTO SELL SIGNAL! ", Symbol(), " @ ", DoubleToStr(Bid, Digits));
+            Alert("CRYPTO SELL SIGNAL! ", Symbol(), " @ ", DoubleToStr(Bid, Digits));
          
          WaitingForExit = true;
          LastTradeTime = Time[0];
@@ -1003,7 +1012,7 @@ bool OpenCryptoTrade(int orderType, double stopLoss, double takeProfit)
    {
       if(stopLoss > 0 && (price - stopLoss) < minStopLevel * 2)
       {
-         Print("🔴 Krypto-SL zu nah am Preis. ATR: ", LastATR);
+         Print("Krypto-SL zu nah am Preis. ATR: ", LastATR);
          stopLoss = price - (LastATR * ATR_Multiplier);
       }
       if(takeProfit > 0 && (takeProfit - price) < minStopLevel * 2)
@@ -1015,7 +1024,7 @@ bool OpenCryptoTrade(int orderType, double stopLoss, double takeProfit)
    {
       if(stopLoss > 0 && (stopLoss - price) < minStopLevel * 2)
       {
-         Print("🔴 Krypto-SL zu nah am Preis. ATR: ", LastATR);
+         Print("Krypto-SL zu nah am Preis. ATR: ", LastATR);
          stopLoss = price + (LastATR * ATR_Multiplier);
       }
       if(takeProfit > 0 && (price - takeProfit) < minStopLevel * 2)
@@ -1053,13 +1062,13 @@ bool OpenCryptoTrade(int orderType, double stopLoss, double takeProfit)
       TotalTrades++;
       LastTradeTime = TimeCurrent();
       
-      Print("💎 KUNDENPROFIL-Trade eröffnet: ", (orderType == OP_BUY) ? "BUY" : "SELL",
+      Print("KUNDENPROFIL-Trade eroeffnet: ", (orderType == OP_BUY) ? "BUY" : "SELL",
             " Lots:", validLotSize, " (Risiko: ", CurrentRiskPercent, "%)",
             " Trades heute: ", TradesToday, "/", MaxTradesPerDay,
             " Preis:", price, " SL:", stopLoss, " TP:", takeProfit);
       
       if(EnableAlerts)
-         Alert("📊 Trade ", TradesToday, "/", MaxTradesPerDay, " - ",
+         Alert("Trade ", TradesToday, "/", MaxTradesPerDay, " - ",
                (orderType == OP_BUY) ? "BUY" : "SELL", " ", Symbol());
       
       return true;
@@ -1067,7 +1076,7 @@ bool OpenCryptoTrade(int orderType, double stopLoss, double takeProfit)
    else
    {
       int error = GetLastError();
-      Print("🔴 Krypto-Trade Fehler: ", error, " - ", ErrorDescription(error));
+      Print("Krypto-Trade Fehler: ", error, " - ", ErrorDescription(error));
       return false;
    }
 }
@@ -1163,7 +1172,7 @@ void UpdateCryptoTrailingStop(int ticket)
       if(newSL > OrderStopLoss() && newSL < Bid)
       {
          if(OrderModify(ticket, OrderOpenPrice(), newSL, OrderTakeProfit(), 0))
-            Print("💎 Trailing Stop aktualisiert: ", newSL);
+            Print("Trailing Stop aktualisiert: ", newSL);
       }
    }
    else if(OrderType() == OP_SELL)
@@ -1172,7 +1181,7 @@ void UpdateCryptoTrailingStop(int ticket)
       if((OrderStopLoss() == 0 || newSL < OrderStopLoss()) && newSL > Ask)
       {
          if(OrderModify(ticket, OrderOpenPrice(), newSL, OrderTakeProfit(), 0))
-            Print("💎 Trailing Stop aktualisiert: ", newSL);
+            Print("Trailing Stop aktualisiert: ", newSL);
       }
    }
 }
@@ -1225,9 +1234,8 @@ void ExecuteCryptoExit(int ticket, string reason)
                PlaySound(SoundFileLoss);
          }
          
-         string profitEmoji = isWin ? "💰" : "💸";
-         string alertMsg = profitEmoji + " CRYPTO EXIT: " + reason + " | " +
-                          (isWin ? "GEWINN ✅" : "VERLUST ❌") + " | " +
+         string alertMsg = " CRYPTO EXIT: " + reason + " | " +
+                          (isWin ? "GEWINN" : "VERLUST") + " | " +
                           DoubleToStr(profit, 2) + " " + AccountCurrency();
          
          if(EnableAlerts)
@@ -1392,7 +1400,7 @@ void CreateCryptoDashboard()
    ObjectSet("CryptoDashboard", OBJPROP_BORDER_TYPE, BORDER_FLAT);
    
    // Labels - Standard
-   CreateCryptoLabel("Crypto_Title", "💎 SCALPING EA - KUNDENPROFIL", DashboardX + 10, DashboardY + 10, clrGold, 11);
+   CreateCryptoLabel("Crypto_Title", "SCALPING EA - KUNDENPROFIL", DashboardX + 10, DashboardY + 10, clrGold, 11);
    CreateCryptoLabel("Crypto_Symbol", "", DashboardX + 10, DashboardY + 30, clrWhite, 10);
    CreateCryptoLabel("Crypto_Trend", "", DashboardX + 10, DashboardY + 50, clrWhite, 10);
    CreateCryptoLabel("Crypto_Volume", "", DashboardX + 10, DashboardY + 70, clrWhite, 10);
@@ -1422,7 +1430,7 @@ void CreateCryptoDashboard()
 //+------------------------------------------------------------------+
 void SetupProfessionalChartDesign()
 {
-   Print("🎨 Lade professionelles Krypto-Chart Design...");
+   Print("Lade professionelles Krypto-Chart Design...");
    
    // === HINTERGRUND & GRID ===
    ChartSetInteger(0, CHART_COLOR_BACKGROUND, clrBlack);              // Schwarzer Hintergrund
@@ -1479,9 +1487,9 @@ void SetupProfessionalChartDesign()
    // Spezieller Krypto-Indikator Style
    ApplyCryptoIndicatorStyles();
    
-   Print("✅ Professionelles Krypto-Design geladen!");
-   Print("💎 Bullish Kerzen: Neon-Grün | Bearish Kerzen: Pink");
-   Print("🎯 Ask: Hot Pink | Bid: Deep Sky Blue");
+   Print("Professionelles Krypto-Design geladen!");
+   Print("Bullish Kerzen: Neon-Gruen | Bearish Kerzen: Pink");
+   Print("Ask: Hot Pink | Bid: Deep Sky Blue");
 }
 
 //+------------------------------------------------------------------+
@@ -1499,7 +1507,7 @@ void ApplyCryptoIndicatorStyles()
    // Diese Farben können für MA, RSI, MACD etc. verwendet werden
    // Sie werden automatisch beim Hinzufügen von Indikatoren angewendet
    
-   Print("🎨 Krypto-Indikator Farbpalette aktiviert");
+   Print("Krypto-Indikator Farbpalette aktiviert");
    
    // Zeichne Trading-Zeit Highlights
    if(RestrictedTradingHours)
@@ -1535,7 +1543,7 @@ void DrawTradingTimeZones()
    ObjectSet("TradingZone", OBJPROP_STYLE, STYLE_DOT);
    ObjectSet("TradingZone", OBJPROP_WIDTH, 1);
    
-   Print("🕐 Trading-Zeit Zonen gezeichnet: NY Open (15:30-16:30), Trading (15:45-17:45)");
+   Print("Trading-Zeit Zonen gezeichnet: NY Open (15:30-16:30), Trading (15:45-17:45)");
 }
 
 //+------------------------------------------------------------------+
@@ -1554,68 +1562,65 @@ void CreateCryptoLabel(string name, string text, int x, int y, color clr, int fo
 //+------------------------------------------------------------------+
 void UpdateCryptoDashboard()
 {
-   ObjectSetText("Crypto_Symbol", "📊 " + Symbol(), 12, "Arial Bold", clrAqua);
+   ObjectSetText("Crypto_Symbol", Symbol(), 12, "Arial Bold", clrAqua);
    
    color trendColor = clrWhite;
-   string trendEmoji = "➡️";
-   if(TrendDirection == "BULLISH") { trendColor = clrLime; trendEmoji = "📈"; }
-   if(TrendDirection == "BEARISH") { trendColor = clrRed; trendEmoji = "📉"; }
-   ObjectSetText("Crypto_Trend", trendEmoji + " Trend: " + TrendDirection, 10, "Arial", trendColor);
+   if(TrendDirection == "BULLISH") { trendColor = clrLime; }
+   if(TrendDirection == "BEARISH") { trendColor = clrRed; }
+   ObjectSetText("Crypto_Trend", "Trend: " + TrendDirection, 10, "Arial", trendColor);
    
-   string volumeStatus = (CurrentVolume > AvgVolume * VolumeMultiplier) ? "🚀 HIGH" : "📊 NORMAL";
+   string volumeStatus = (CurrentVolume > AvgVolume * VolumeMultiplier) ? "HIGH" : "NORMAL";
    ObjectSetText("Crypto_Volume", "Volume: " + volumeStatus, 10, "Arial", clrWhite);
    
-   string volEmoji = HighVolatilityPeriod ? "⚡" : "📊";
-   string volText = volEmoji + " Volatilität: " + DoubleToStr(CurrentVolatility * 100, 2) + "%";
+   string volText = "Volatilitaet: " + DoubleToStr(CurrentVolatility * 100, 2) + "%";
    color volColor = HighVolatilityPeriod ? clrOrange : clrWhite;
    ObjectSetText("Crypto_Volatility", volText, 10, "Arial", volColor);
    
-   string setupStatus = "⏳ WAITING";
+   string setupStatus = "WAITING";
    color setupColor = clrWhite;
-   if(BullishSetup) { setupStatus = "🚀 BULLISH"; setupColor = clrLime; }
-   if(BearishSetup) { setupStatus = "⚠️ BEARISH"; setupColor = clrRed; }
+   if(BullishSetup) { setupStatus = "BULLISH"; setupColor = clrLime; }
+   if(BearishSetup) { setupStatus = "BEARISH"; setupColor = clrRed; }
    ObjectSetText("Crypto_Setup", "Setup: " + setupStatus, 10, "Arial", setupColor);
    
-   ObjectSetText("Crypto_Support", "🟢 Support: " + DoubleToStr(LastSupport, Digits), 10, "Arial", clrAqua);
-   ObjectSetText("Crypto_Resistance", "🔴 Resistance: " + DoubleToStr(LastResistance, Digits), 10, "Arial", clrOrange);
+   ObjectSetText("Crypto_Support", "Support: " + DoubleToStr(LastSupport, Digits), 10, "Arial", clrAqua);
+   ObjectSetText("Crypto_Resistance", "Resistance: " + DoubleToStr(LastResistance, Digits), 10, "Arial", clrOrange);
    
    string status = "";
    if(OrdersTotal() > 0)
    {
       if(WaitingForExit)
-         status = "🔄 MONITORING EXIT";
+         status = "MONITORING EXIT";
       else
-         status = "📈 POSITION OPEN";
+         status = "POSITION OPEN";
    }
    else
    {
-      status = "⏳ SCANNING MARKET";
+      status = "SCANNING MARKET";
    }
    ObjectSetText("Crypto_Status", "Status: " + status, 10, "Arial", clrWhite);
    
-   string statsText = "📊 Trades: " + IntegerToString(TotalTrades) + " | W:" + IntegerToString(WinningTrades) + " L:" + IntegerToString(LosingTrades);
+   string statsText = "Trades: " + IntegerToString(TotalTrades) + " | W:" + IntegerToString(WinningTrades) + " L:" + IntegerToString(LosingTrades);
    ObjectSetText("Crypto_Stats", statsText, 10, "Arial", clrWhite);
    
    color profitColor = (TotalProfit >= 0) ? clrLime : clrRed;
-   string profitEmoji = (TotalProfit >= 0) ? "💰" : "💸";
-   string profitText = profitEmoji + " Profit: " + DoubleToStr(TotalProfit, 2) + " " + AccountCurrency();
+   string profitText = "Profit: " + DoubleToStr(TotalProfit, 2) + " " + AccountCurrency();
    ObjectSetText("Crypto_Profit", profitText, 10, "Arial", profitColor);
    
    double winRate = 0;
    if(TotalTrades > 0)
       winRate = (WinningTrades * 100.0) / TotalTrades;
-   string winRateText = "🎯 Win-Rate: " + DoubleToStr(winRate, 1) + "%";
+   string winRateText = "Win-Rate: " + DoubleToStr(winRate, 1) + "%";
    color winRateColor = (winRate >= 70) ? clrLime : (winRate >= 50) ? clrYellow : clrRed;
    ObjectSetText("Crypto_WinRate", winRateText, 10, "Arial", winRateColor);
    
-   string btcStatus = BTCBullish ? "🚀 BULLISH" : "⚠️ BEARISH";
+   string btcStatus = BTCBullish ? "BULLISH" : "BEARISH";
    color btcColor = BTCBullish ? clrLime : clrRed;
-   ObjectSetText("Crypto_BTC", "₿ BTC Trend: " + btcStatus, 10, "Arial", btcColor);
+   ObjectSetText("Crypto_BTC", "BTC Trend: " + btcStatus, 10, "Arial", btcColor);
    
    // KUNDENPROFIL-DASHBOARD ERWEITERUNGEN
    
    // Trades pro Tag (Info ohne Beschränkung)
-   string tradeCountText = "📅 Heute: " + IntegerToString(TradesToday) + " Trades (Empfehlung: " + IntegerToString(MaxTradesPerDay) + ")";
+   string tradeCountText = "Heute: " + IntegerToString(TradesToday) + " Trades (Empfehlung: " + IntegerToString(MaxTradesPerDay) + ")";
    color tradeCountColor;
    if(TradesToday > MaxTradesPerDay)
       tradeCountColor = clrOrange; // Warnung aber kein Stopp
@@ -1626,12 +1631,12 @@ void UpdateCryptoDashboard()
    ObjectSetText("Crypto_DailyTrades", tradeCountText, 10, "Arial", tradeCountColor);
    
    // Aktuelles Risiko
-   string riskText = "⚖️ Risiko: " + DoubleToStr(CurrentRiskPercent, 1) + "% (" + DoubleToStr(CalculatedLotSize, 3) + " Lots)";
+   string riskText = "Risiko: " + DoubleToStr(CurrentRiskPercent, 1) + "% (" + DoubleToStr(CalculatedLotSize, 3) + " Lots)";
    color riskColor = (CurrentRiskPercent < RiskPercent) ? clrYellow : clrWhite;
    ObjectSetText("Crypto_Risk", riskText, 10, "Arial", riskColor);
    
    // Drawdown Status
-   string ddText = "📉 Drawdown: " + DoubleToStr(CurrentDrawdown, 1) + "% (Max: " + DoubleToStr(MaxDrawdownPercent, 1) + "%)";
+   string ddText = "Drawdown: " + DoubleToStr(CurrentDrawdown, 1) + "% (Max: " + DoubleToStr(MaxDrawdownPercent, 1) + "%)";
    color ddColor = (CurrentDrawdown > MaxDrawdownPercent * 0.8) ? clrRed : (CurrentDrawdown > MaxDrawdownPercent * 0.6) ? clrYellow : clrLime;
    ObjectSetText("Crypto_Drawdown", ddText, 10, "Arial", ddColor);
    
@@ -1642,28 +1647,28 @@ void UpdateCryptoDashboard()
    {
       if(IsNYOpenTime())
       {
-         timeStatus = "🇺🇸 NY OPEN - OPTIMAL";
+         timeStatus = "NY OPEN - OPTIMAL";
          timeColor = clrAqua;
       }
       else
       {
-         timeStatus = "✅ EMPFOHLENE ZEIT";
+         timeStatus = "EMPFOHLENE ZEIT";
          timeColor = clrLime;
       }
    }
    else
    {
-      timeStatus = "ℹ️ AUSSERHALB EMPF. ZEIT";
+      timeStatus = "AUSSERHALB EMPF. ZEIT";
       timeColor = clrYellow; // Warnung statt Grau
    }
    ObjectSetText("Crypto_TradingTime", timeStatus, 10, "Arial", timeColor);
    
    // Aktuelles Symbol anzeigen
-   string currentSymbolText = "📈 Symbol: " + Symbol();
+   string currentSymbolText = "Symbol: " + Symbol();
    ObjectSetText("Crypto_CurrentSymbol", currentSymbolText, 10, "Arial", clrAqua);
    
    // News-Filter Status anzeigen
-   string newsFilterText = "📰 News-Filter: ";
+   string newsFilterText = "News-Filter: ";
    color newsFilterColor;
    if(NewsFilter)
    {
@@ -1688,19 +1693,32 @@ void UpdateCryptoDashboard()
 //+------------------------------------------------------------------+
 void PrintTradingStats()
 {
-   Print("📊 === CRYPTO TRADING STATISTIKEN ===");
-   Print("💎 Gesamte Trades: ", TotalTrades);
-   Print("✅ Gewinn-Trades: ", WinningTrades);
-   Print("❌ Verlust-Trades: ", LosingTrades);
-   Print("💰 Gesamt-Profit: ", DoubleToStr(TotalProfit, 2), " ", AccountCurrency());
+   Print("=== CRYPTO TRADING STATISTIKEN ===");
+   Print("Gesamte Trades: ", TotalTrades);
+   Print("Gewinn-Trades: ", WinningTrades);
+   Print("Verlust-Trades: ", LosingTrades);
+   Print("Gesamt-Profit: ", DoubleToStr(TotalProfit, 2), " ", AccountCurrency());
    
    if(TotalTrades > 0)
    {
       double winRate = (WinningTrades * 100.0) / TotalTrades;
-      Print("🎯 Win-Rate: ", DoubleToStr(winRate, 1), "%");
+      Print("Win-Rate: ", DoubleToStr(winRate, 1), "%");
    }
    
    Print("==========================================");
+}
+
+//+------------------------------------------------------------------+
+//| Timer function - Dashboard Updates bei geschlossenem Markt      |
+//+------------------------------------------------------------------+
+void OnTimer()
+{
+    if(EnableDashboard)
+    {
+        CheckTradeCount(); // Trade-Counter aktualisieren
+        CalculatedLotSize = CalculateDynamicLotSize(); // Lot-Size berechnen
+        UpdateCryptoDashboard(); // Dashboard aktualisieren
+    }
 }
 
 //+------------------------------------------------------------------+
