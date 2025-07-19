@@ -167,12 +167,6 @@ extern string SoundFileExit = "alert2.wav"; // Exit sound
 - **[Setup Guide](EA_Setup_Guide_EN.md)**: Detailed installation instructions
 - **[Parameter Reference](Functions.md)**: Complete parameter documentation
 - **[German Documentation](EA_Setup_Anleitung.md)**: Deutsche Anleitung
-- **[Trading Strategies](docs/strategies.md)**: Recommended approaches
-
-### 🔧 Support Files
-- **[Troubleshooting](docs/troubleshooting.md)**: Common issues and solutions
-- **[Optimization Guide](docs/optimization.md)**: Performance tuning
-- **[Backtest Results](docs/backtests.md)**: Historical performance data
 
 ---
 
@@ -210,21 +204,6 @@ We welcome contributions! Please read our [Contributing Guidelines](CONTRIBUTING
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 📞 Support
-
-### 🌐 Contact
-- **Website**: [www.b0ss.dev](https://www.b0ss.dev)
-- **Author**: Alexander Boß
-- **Email**: [contact@b0ss.dev](mailto:contact@b0ss.dev)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/ScalpingEA/issues)
-
-### 💬 Community
-- **Discord**: [Trading Community](https://discord.gg/trading)
-- **Telegram**: [@ScalpingEA](https://t.me/ScalpingEA)
-- **Twitter**: [@alexanderboss_](https://twitter.com/alexanderboss_)
 
 ---
 
